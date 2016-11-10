@@ -1,0 +1,120 @@
+//
+//  InstitucionalViewController.m
+//  Simbernet
+//
+//  Created by Marcio Pinto on 17/09/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import "InstitucionalViewController.h"
+#import "InstitucionalModel.h"
+#import "InstitucionalService.h"
+
+@interface InstitucionalViewController () <InstitucionalServiceDelegate>
+
+@end
+
+@implementation InstitucionalViewController
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+{
+    self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+    if (self) {
+        // Custom initialization
+    }
+    return self;
+}
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    
+    [self setTitle:self.titulo];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    InstitucionalModel* instModel = [InstitucionalModel obterChave:self.chave];
+    if (instModel == nil) {
+        
+        InstitucionalService* instServ = [InstitucionalService new];
+        instServ.delegate = self;
+        [instServ obterPorChave:self.chave];
+    } else {
+        [self getInstitucional:self.chave];
+    }
+}
+
+#pragma mark - SlideNavigationController Methods -
+
+- (BOOL)slideNavigationControllerShouldDisplayLeftMenu
+{
+    if (self.backButton) {
+        return NO;
+    } else {
+        return YES;
+    }
+}
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (void)getInstitucional:(NSString*) chave
+{
+    InstitucionalModel* instModel = [InstitucionalModel obterChave:chave ];
+    
+    if (instModel != nil) {
+        
+        //create the string
+        NSMutableString *html = [NSMutableString stringWithString: @"<html><head><title></title></head><body style=\"font-family: Arial, Helvetica, sans-serif; font-size:10pt; margin: 5px; text-align: justify;\" topmargin=\"0\" rightmargin=\"0\" leftmargin=\"0\">"];
+        
+        //continue building the string
+        [html appendString:instModel.texto];
+        
+        [html appendString:@"<br/><br/><br/><br/></body></html>"];
+        
+        //pass the string to the webview
+        [self.webInstitucional loadHTMLString:[html description] baseURL:nil];
+    }
+    
+}
+
+#pragma mark - BaseServiceDelegate - Erro Geral
+
+-(void)error:(NSString *)error onMethod:(NSString*)method withRequest:(HttpRequest *)request {
+    NSLog(@"error: %@", method);
+    
+    [[[UIAlertView alloc] initWithTitle:@"Atenção"
+                                message:error
+                               delegate:nil
+                      cancelButtonTitle:@"OK"
+                      otherButtonTitles: nil] show];
+}
+
+#pragma mark InstitucionalServiceDelegate
+
+- (void) obterPorChaveReturn:(InstitucionalModel*)institucional  success:(BOOL)success {
+    
+    if (institucional != nil && institucional.codigo != 0) {
+        
+        [self getInstitucional:self.chave];
+        
+    } else {
+        
+        UIAlertView *alert =[[UIAlertView alloc]
+                             initWithTitle:@"Atenção"
+                             message:@"Não foi possível conectar para bucar os dados."
+                             delegate:self
+                             cancelButtonTitle:@"Ok"
+                             otherButtonTitles: nil];
+        [alert show];
+        
+        [self dismissViewControllerAnimated:YES completion:nil];
+    }
+}
+
+@end

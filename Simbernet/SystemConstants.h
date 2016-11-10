@@ -1,0 +1,178 @@
+//
+//  SystemConstants.h
+//  ProconVirtualGoias
+//
+//  Created by Vinicius Miguel on 05/11/14.
+//  Copyright (c) 2014 in6. All rights reserved.
+//
+
+#import <Foundation/Foundation.h>
+
+// ========= Simbernet ==========================================================================
+
+//#define defaultName @"Simbernet"
+
+// ====================================================================================================
+
+// ========= INFOS DEVICE =============================================================================
+
+#define STATUS_BAR_HEIGHT [UIApplication sharedApplication].statusBarFrame.size.height
+#define LARGURA_SCREEN [[UIScreen mainScreen] bounds].size.width
+#define ALTURA_SCREEN [[UIScreen mainScreen] bounds].size.height
+#define IS_IPHONE4 ([[UIScreen mainScreen] bounds].size.height == 480)
+#define IS_IPHONE5 ([[UIScreen mainScreen] bounds].size.height == 568)
+#define IS_OS_5_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] >= 5.0)
+#define IS_OS_6_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] >= 6.0)
+#define IS_OS_7_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0)
+#define IS_OS_8_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] >= 8.0)
+#define IS_NOT_OS_8_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] < 8.0)
+
+// ====================================================================================================
+
+
+#pragma mark Configuração de Módulo
+
+extern NSString* const USA_MODULO_DOWNLOADS;
+extern NSString* const USA_MODULO_TWITTER;
+
+#pragma mark User Defaults
+
+extern NSString* const UserDefaults_ListaEstados;
+extern NSString* const UserDefaults_ListaCidades;
+extern NSString* const UserDefaults_ListaCategoriasTwitter;
+extern NSString* const UserDefaults_ListaUltimosTweets;
+extern NSString* const UserDefaults_DataUltimaAtualizacaoTweets;
+extern NSString* const UserDefaults_DataUltimaAtualizacaoEventos;
+extern NSString* const UserDefaults_DataUltimaAtualizacaoNoticias;
+extern NSString* const UserDefaults_Institucional;
+extern NSString* const UserDefaults_ListaTiposDownload;
+
+#pragma mark HTTP Variables
+
+extern NSString* const HTTP_Get;
+extern NSString* const HTTP_Post;
+extern NSString* const HTTP_JSONHeaderFieldValue;
+extern NSString* const HTTP_AcceptHeaderFieldKey;
+extern NSString* const HTTP_ContentTypeFiedKey;
+extern NSString* const HTTP_ContentLengthFieldKey;
+extern NSString* const HTTP_PlatformLabel;
+extern NSString* const HTTP_Platform;
+extern NSString* const HTTP_AccessTokenLabel;
+
+extern NSString* const HTTP_Field_Data;
+extern NSString* const HTTP_Field_List;
+
+extern NSString* const HTTP_Object_Categoria;
+extern NSString* const HTTP_Object_Cidade;
+extern NSString* const HTTP_Object_Comentario;
+extern NSString* const HTTP_Object_Download;
+extern NSString* const HTTP_Object_DownloadGeneric;
+extern NSString* const HTTP_Object_DownloadTipo;
+extern NSString* const HTTP_Object_DownloadDiretorio;
+extern NSString* const HTTP_Object_EstadoCivil;
+extern NSString* const HTTP_Object_User;
+extern NSString* const HTTP_Object_Noticia;
+extern NSString* const HTTP_Object_Tweet;
+extern NSString* const HTTP_Object_Evento;
+extern NSString* const HTTP_Object_Forum;
+extern NSString* const HTTP_Object_ForumHistorico;
+extern NSString* const HTTP_Object_Institucional;
+extern NSString* const HTTP_Object_Agenda;
+
+#pragma mark HTTP Messages
+
+extern NSString* const HTTP_SERVER_ERROR_MESSAGE;
+extern NSString* const HTTP_UNKNOWN_ERROR_MESSAGE;
+extern NSString* const HTTP_FAILED_TO_CONNECT_MESSAGE;
+
+#pragma mark Patterns
+
+extern NSString* const Pattern_NUMERIC;
+extern NSString* const Pattern_UTC;
+extern NSString* const Pattern_DATE_ISO;
+extern NSString* const Pattern_DATE_ISO2;
+extern NSString* const Pattern_DATE_DDMMYYY_HHMM;
+extern NSString* const Pattern_CPF;
+extern NSString* const Pattern_CNPJ;
+extern NSString* const Pattern_PHONE;
+extern NSString* const Pattern_CEP;
+extern NSString* const Pattern_BIRTHDAY;
+
+#pragma mark Regex
+
+extern NSString* const Regex_NUMBER_ONLY;
+extern NSString* const Regex_EMAIL_FULL;
+extern NSString* const Regex_EMAIL_HALF;
+extern NSString* const Regex_CEP;
+extern NSString* const Regex_PHONE;
+extern NSString* const Regex_DATE;
+
+#pragma mark Paths
+
+extern NSString* const base_path;
+extern NSString* const base_aplicacao;
+extern NSString* const base_download;
+
+#pragma mark URLs
+
+extern NSString* const HTTP_WebserviceBase;
+
+extern NSString* const HTTP_CidadeURL;
+extern NSString* const HTTP_ComentarioURL;
+extern NSString* const HTTP_DownloadURL;
+extern NSString* const HTTP_DownloadTipoURL;
+extern NSString* const HTTP_EstadoCivilURL;
+extern NSString* const HTTP_EventoURL;
+extern NSString* const HTTP_LoginURL;
+extern NSString* const HTTP_NoticiaURL;
+extern NSString* const HTTP_TwitterCategoriaURL;
+extern NSString* const HTTP_TwitterURL;
+extern NSString* const HTTP_UserAniversarianteURL;
+extern NSString* const HTTP_UserURL;
+extern NSString* const HTTP_ForumURL;
+extern NSString* const HTTP_ForumHistoricoURL;
+extern NSString* const HTTP_InstitucionalURL;
+extern NSString* const HTTP_AgendaURL;
+extern NSString* const HTTP_DeviceURL;
+
+extern NSString* const HTTP_Repositorio;
+extern NSString* const HTTP_PathFotosNoticia;
+extern NSString* const HTTP_PathFotosUsuarios;
+extern NSString* const HTTP_PathFotosEvento;
+extern NSString* const HTTP_PathFotosForum;
+
+#pragma mark Session Variables
+
+extern NSString* const Session_UserLogged;
+extern NSString* const Session_DeviceTokenUser;
+
+#pragma mark Images
+
+extern NSString* const ImageCheckboxChecked;
+extern NSString* const ImageCheckboxUnchecked;
+
+#pragma mark ViewController IDS
+
+extern NSString* const VCFormEditViewController;
+
+extern NSString* const VCAniversarianteList;
+extern NSString* const VCDownload;
+extern NSString* const VCTwitterInserir;
+extern NSString* const VCWebView;
+
+#pragma mark TableViewCell IDS
+
+extern NSString* const AniversarianteTableViewCellID;
+extern NSString* const DownloadTableViewCellID;
+extern NSString* const TwitterTableViewCellID;
+
+#pragma mark Segues
+
+extern NSString* const SegueEmbedFormEditViewController;
+extern NSString* const SegueToImageVisualizeViewController;
+extern NSString* const SegueToFormEditHeaderViewController;
+extern NSString* const SegueToFormEditTabViewController;
+extern NSString* const SEGUE_NOTICIAS_COMMENTS_LIST;
+extern NSString* const SEGUE_EVENTOS_EVENTO_VISUALIZAR;
+extern NSString* const SEGUE_FORUNS_FORUM_HISTORICO;
+extern NSString* const SEGUE_AGENDA_COMPROMISSO_DETALHE;
