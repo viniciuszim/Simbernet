@@ -1,0 +1,39 @@
+
+/* Class = "UIButton"; normalTitle = "Acessar"; ObjectID = "1TE-qi-yz9"; */
+"1TE-qi-yz9.normalTitle" = "Acessar";
+
+/* Class = "UILabel"; text = "       Configurações"; ObjectID = "Aq7-Em-opm"; */
+"Aq7-Em-opm.text" = "       Configurações";
+
+/* Class = "UILabel"; text = "       Twitter"; ObjectID = "DBE-6F-XHB"; */
+"DBE-6F-XHB.text" = "       Twitter";
+
+/* Class = "UINavigationItem"; title = "Simbernet"; ObjectID = "FUA-iB-Vv0"; */
+"FUA-iB-Vv0.title" = "Simbernet";
+
+/* Class = "UILabel"; text = "Ordem de Serviço"; ObjectID = "Fjs-fR-3Ir"; */
+"Fjs-fR-3Ir.text" = "Ordem de Serviço";
+
+/* Class = "UILabel"; text = "  MINHAS PREFERÊNCIAS"; ObjectID = "KYU-b3-3vD"; */
+"KYU-b3-3vD.text" = "  MINHAS PREFERÊNCIAS";
+
+/* Class = "UILabel"; text = "Financeiro"; ObjectID = "VVd-DR-9E0"; */
+"VVd-DR-9E0.text" = "Financeiro";
+
+/* Class = "UILabel"; text = "Forum"; ObjectID = "a01-xc-QQK"; */
+"a01-xc-QQK.text" = "Fórum";
+
+/* Class = "UILabel"; text = "       Ajuda"; ObjectID = "f9R-3J-22M"; */
+"f9R-3J-22M.text" = "       Ajuda";
+
+/* Class = "UILabel"; text = "Intranet"; ObjectID = "hnG-ml-7MI"; */
+"hnG-ml-7MI.text" = "Intranet";
+
+/* Class = "UILabel"; text = "       Sair"; ObjectID = "lPA-bW-uW2"; */
+"lPA-bW-uW2.text" = "       Sair";
+
+/* Class = "UILabel"; text = "       Nome Usuario"; ObjectID = "wRH-HO-DwW"; */
+"wRH-HO-DwW.text" = "       Nome Usuario";
+
+/* Class = "UIButton"; normalTitle = "Esqueceu sua senha?"; ObjectID = "wr7-6L-e9a"; */
+"wr7-6L-e9a.normalTitle" = "Esqueceu sua senha?";

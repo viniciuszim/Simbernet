@@ -1,0 +1,291 @@
+//
+//  LoginViewController.m
+//  Simbernet
+//
+//  Created by Marcio Pinto on 02/04/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import "LoginViewController.h"
+#import "ValidateUtils.h"
+#import "UsuarioService.h"
+#import "Usuario.h"
+#import "Simbernet-Swift.h"
+#import "UIView+RNActivityView.h"
+
+@interface LoginViewController () <UserServiceDelegate, UITextFieldDelegate>
+- (void)storeUsuario:(Usuario*)usuario;
+- (Usuario *)getUsuario;
+@property (nonatomic) CGFloat visibleOffset;
+@end
+
+@implementation LoginViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    // Coloca um layout legal e estilizado na view da celula
+    _viewWhite.layer.masksToBounds = NO;
+    _viewWhite.layer.shadowOffset = CGSizeMake(0, 0);
+    _viewWhite.layer.shadowRadius = 1.0;
+    _viewWhite.layer.shadowColor = [UIColor blackColor].CGColor;
+    _viewWhite.layer.shadowOpacity = 0.5;
+    _viewWhite.layer.cornerRadius = 2.0;
+    
+    // Se jah tiver usuario na sessao redireciona
+    if ([self getUsuario].nome != nil
+        && ![@"" isEqualToString:[self getUsuario].nome]) {
+        // Redireciona para tela de inicio
+        [self performSegueWithIdentifier:@"inicioViewSegue" sender:self];
+    }
+    
+    //SET THE LAST VIEW WHICH THE KEYBOARD WILL NOT HIDE
+    self.lastVisibleView = _viewWhite;
+    self.visibleMargin = 15.;
+    
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    //Coloca a barra pra esconder já que na view superior sempre mostra
+    self.navigationController.navigationBarHidden = YES;
+    
+    // Altero o Status Bar para o estilo padrao
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault];
+    
+    // Teclado
+    _textFieldLogin.returnKeyType = UIReturnKeyDone;
+    [_textFieldLogin setDelegate:self];
+    
+    _textFieldSenha.returnKeyType = UIReturnKeyDone;
+    [_textFieldSenha setDelegate:self];
+    
+    //// Controla o movimento da view quando o teclado é acionado
+    [super viewWillAppear:animated];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillShow:)
+                                                 name:UIKeyboardWillShowNotification
+                                               object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(keyboardWillHide:)
+                                                 name:UIKeyboardWillHideNotification
+                                               object:nil];
+    self.visibleMargin = 10.;
+
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [self.navigationController setNavigationBarHidden:NO animated:animated];
+    [super viewWillDisappear:animated];
+    
+    // Esconde Teclado
+    [self.view endEditing:YES];
+    
+    // Esconde Mensagem de erro
+    [self.labelMensagem setHidden:YES];
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+#pragma mark TextField Hidden
+-(BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    if (textField == _textFieldSenha) {
+        UsuarioService* usuarioService = [UsuarioService new];
+        usuarioService.delegate = self;
+        Usuario* usu = [self getUsuario];
+        if (usu == nil) {
+            usu = [Usuario new];
+        }
+        usu.login = self.textFieldLogin.text;
+        usu.senha = self.textFieldSenha.text;
+        [usuarioService loginWith:usu];
+
+        // Loading
+        [self showViewLoading:@"Conectando" isDone:NO];
+    }
+    
+    // Esconde o teclado
+    [self.view endEditing:YES];
+    
+    return YES;
+}
+
+#pragma mark UserServiceDelegate
+
+- (void)error:(NSString *)error onMethod:(NSString *)method withRequest:(HttpRequest *)request {
+    NSLog(@"Erro: %@", error);
+    // Alerta de Mensagem de Erro
+    [self showViewLoadingErro:@"Erro" isDone:YES];
+    // Escreve mensagem de erro
+    [self.labelMensagem setHidden:NO];
+}
+
+- (void)userServiceDidLogin:(Usuario *)usuario success:(BOOL)success {
+    NSLog(@"success: %d", success);
+    if (success) {
+        // Salvar usuário logado na sessão
+        [self storeUsuario:usuario];
+
+        NSLog(@"Usuario: %@", usuario.nome);
+
+        self.textFieldSenha.text = @"";
+
+        // Alerta Conectou
+        [self showViewLoading:@"Conectou" isDone:YES];
+
+        // Redireciona
+        [self performSelector:@selector(redirecionaAreaRestritaSegue) withObject:nil afterDelay:1.0];
+
+    } else {
+        // Alerta de Erro
+        [self showViewLoadingErro:@"Erro" isDone:YES];
+        
+        // Mensagem de erro
+        [self.labelMensagem setHidden:NO];
+    }
+    
+    NSLog(@"Foi no java");
+    
+}
+
+- (void)redirecionaAreaRestritaSegue {
+    // Redireciona para tela de inicio da Area Restrita
+    [self performSegueWithIdentifier:@"inicioViewSegue" sender:self];
+    
+    // Esconde Loading
+    [self escondeSpinnerLoading];
+}
+
+- (void)storeUsuario:(Usuario*)usuario {
+
+    [Usuario storeUsuario:usuario];
+}
+
+-(Usuario *)getUsuario
+{
+    return [Usuario getUsuario];
+}
+
+#pragma mark - Acoes
+
+- (IBAction)logar:(UIButton *)sender {
+    UsuarioService* usuarioService = [UsuarioService new];
+    usuarioService.delegate = self;
+    Usuario* usu = [self getUsuario];
+    if (usu == nil) {
+        usu = [Usuario new];
+    }
+    usu.login = self.textFieldLogin.text;
+    usu.senha = self.textFieldSenha.text;
+    [usuarioService loginWith:usu];
+
+    // Loading
+    [self showViewLoading:@"Conectando" isDone:NO];
+    
+    // Esconde o teclado
+    [self.view endEditing:YES];
+}
+
+- (void)showViewLoading:(NSString *)label isDone:(BOOL) done {
+    if (IS_OS_8_OR_LATER) {
+        // Loading
+        [SwiftSpinner show:label animated:YES];
+    } else {
+        [self.navigationController.view.rn_activityView setupDefaultValues];
+        if (done == YES) {
+            [self.navigationController.view showActivityViewWithLabel:label image:[UIImage imageNamed:@"37x-Checkmark"]];
+        } else {
+            [self.navigationController.view showActivityViewWithLabel:label];
+        }
+    }
+}
+
+- (void) showViewLoadingErro:(NSString *)label isDone:(BOOL) done {
+    if (IS_OS_8_OR_LATER) {
+        // Erro
+        [SwiftSpinner show:label animated:NO];
+    } else {
+        [self.navigationController.view.rn_activityView setupDefaultValues];
+
+        if (done == YES) {
+            [self.navigationController.view showActivityViewWithLabel:label image:[UIImage imageNamed:@"37x-Checkmark"]];
+        } else {
+            [self.navigationController.view showActivityViewWithLabel:label];
+        }
+    }
+
+    // Esconde Loading
+    [self performSelector:@selector(escondeSpinnerLoading) withObject:nil afterDelay:1.0];
+}
+
+- (void)escondeSpinnerLoading {
+    if (IS_OS_8_OR_LATER) {
+        // Esconde Loading
+        [SwiftSpinner hide:nil];
+    } else {
+        [self.navigationController.view hideActivityView];
+    }
+}
+
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+//- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+//    InicioViewController *inicioViewController = segue.destinationViewController;
+//}
+
+#pragma keyboard height
+
+- (void) keyboardWillShow:(NSNotification *)note
+{    
+    CGRect keyboardBounds;
+    [[note.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] getValue: &keyboardBounds];
+    NSNumber *duration = [note.userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey];
+    NSNumber *curve = [note.userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey];
+    
+    keyboardBounds = [self.view convertRect:keyboardBounds toView:nil];
+    CGRect frame = self.view.frame;
+    CGFloat visibleHeight = frame.size.height - keyboardBounds.size.height ;
+    CGFloat lastVisiblePointY = self.lastVisibleView.frame.origin.y + self.lastVisibleView.frame.size.height;
+    if (self.lastVisibleView && self.visibleOffset == 0 && (lastVisiblePointY + self.visibleMargin ) > visibleHeight) {
+        self.visibleOffset = lastVisiblePointY - visibleHeight + self.visibleMargin ;
+        frame.origin.y -= self.visibleOffset;
+    }
+    
+    [UIView beginAnimations:nil context:NULL];
+    [UIView setAnimationBeginsFromCurrentState:YES];
+    [UIView setAnimationDuration:[duration doubleValue]];
+    [UIView setAnimationCurve:[curve intValue]];
+    
+    self.view.frame = frame;
+    
+    [UIView commitAnimations];
+}
+
+
+- (void) keyboardWillHide:(NSNotification *)note
+{
+    NSNumber *duration = [note.userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey];
+    NSNumber *curve = [note.userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey];
+    
+    CGRect frame = self.view.frame;
+    frame.origin.y += self.visibleOffset;
+    self.visibleOffset = 0;
+    
+    [UIView beginAnimations:nil context:NULL];
+    [UIView setAnimationBeginsFromCurrentState:YES];
+    [UIView setAnimationDuration:[duration doubleValue]];
+    [UIView setAnimationCurve:[curve intValue]];
+    
+    self.view.frame = frame;
+    
+    [UIView commitAnimations];
+}
+
+@end

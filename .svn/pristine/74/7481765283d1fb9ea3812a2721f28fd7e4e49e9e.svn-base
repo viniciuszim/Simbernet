@@ -1,0 +1,36 @@
+//
+//  NoticiaViewController.h
+//  Simbernet
+//
+//  Created by Marcio Pinto on 04/05/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import <UIKit/UIKit.h>
+#import "MHGallery.h"
+#import "SlideNavigationController.h"
+#import "NoticiaService.h"
+#import "RNActivityView.h"
+
+@interface CommentsUIButton : UIButton
+@property (nonatomic, strong) NSArray *listComments;
+@property (nonatomic, strong) Noticia *noticia;
+@end
+
+@interface NoticiaTableViewCell : UITableViewCell
+@property (strong, nonatomic) IBOutlet UILabel *titleLabel;
+@property (strong, nonatomic) IBOutlet UILabel *descriptionLabel;
+@property (strong, nonatomic) IBOutlet UILabel *dataLabel;
+@property (strong, nonatomic) IBOutlet UICollectionView *collectionView;
+@property (strong, nonatomic) IBOutlet UIView *backView;
+@property (strong, nonatomic) IBOutlet CommentsUIButton *commentsButton;
+@property (strong, nonatomic) IBOutlet CommentsUIButton *continueReadingButton;
+@end
+
+@interface NoticiaViewController : UIViewController<SlideNavigationControllerDelegate,UITableViewDataSource,UITableViewDelegate,UICollectionViewDataSource,UICollectionViewDelegate,UIViewControllerTransitioningDelegate,MHGalleryDataSource,MHGalleryDelegate>
+@property (nonatomic, strong) NSArray *postList;
+@property (strong,nonatomic) IBOutlet UITableView *tableView;
+
+- (IBAction)noticiaVisualizar:(CommentsUIButton *)sender;
+- (IBAction)goListComments:(CommentsUIButton *)sender;
+@end

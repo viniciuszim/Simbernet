@@ -1,0 +1,29 @@
+//
+//  Simbernet-Prefix.pch
+//  Simbernet
+//
+//  Created by Marcio Pinto on 02/04/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+//
+//  Prefix header
+//
+//  The contents of this file are implicitly included at the beginning of every source file.
+//
+
+#import <Availability.h>
+
+#ifndef __IPHONE_5_0
+#warning "This project uses features only available in iOS SDK 5.0 and later."
+#endif
+
+#ifdef __OBJC__
+    #import <UIKit/UIKit.h>
+    #import <Foundation/Foundation.h>
+    #import "SystemConstants.h"
+    #import "GeneralConstants.h"
+    #import "UIColor+Simbernet.h"
+    #import "AsyncImageView.h"
+    #import "Utils.h"
+#endif

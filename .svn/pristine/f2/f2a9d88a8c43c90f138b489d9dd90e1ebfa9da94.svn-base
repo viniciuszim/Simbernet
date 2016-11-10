@@ -1,0 +1,94 @@
+//
+//  Utils.m
+//  Simbernet
+//
+//  Created by Marcio Pinto on 15/05/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import "Utils.h"
+#import "Simbernet-Swift.h"
+#import "UIView+RNActivityView.h"
+
+@implementation Utils
+
++ (void)showViewLoading:(NSString *)label navigation:(UINavigationController*)navigationController isDone:(BOOL) done {
+    if (IS_OS_8_OR_LATER) {
+        // Loading
+        [SwiftSpinner show:label animated:YES];
+    } else {
+        [navigationController.view.rn_activityView setupDefaultValues];
+        if (done == YES) {
+            [navigationController.view showActivityViewWithLabel:label image:[UIImage imageNamed:@"37x-Checkmark"]];
+        } else {
+            [navigationController.view showActivityViewWithLabel:label];
+        }
+    }
+}
+
++ (void) showViewLoadingErro:(NSString *)label navigation:(UINavigationController*)navigationController isDone:(BOOL) done {
+    if (IS_OS_8_OR_LATER) {
+        // Erro
+        [SwiftSpinner show:label animated:NO];
+    } else {
+        [navigationController.view.rn_activityView setupDefaultValues];
+        
+        if (done == YES) {
+            [navigationController.view showActivityViewWithLabel:label image:[UIImage imageNamed:@"37x-Checkmark"]];
+        } else {
+            [navigationController.view showActivityViewWithLabel:label];
+        }
+    }
+    
+    // Esconde Loading
+    [self performSelector:@selector(hideSpinnerLoading:) withObject:navigationController afterDelay:1.0];
+}
+
++ (void)hideSpinnerLoading:(UINavigationController*)navigationController {
+    if (IS_OS_8_OR_LATER) {
+        // Esconde Loading
+        [SwiftSpinner hide];
+    } else {
+        [navigationController.view hideActivityView];
+    }
+}
+
++ (CGFloat) heightForLabel:(UILabel*)label withText:(NSString*)text {
+    
+    NSDictionary *defaultAttrs = @{NSFontAttributeName : label.font};
+    
+    CGSize size = [text boundingRectWithSize:CGSizeMake(label.frame.size.width, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin attributes:defaultAttrs context:nil ].size;
+    
+    return size.height;
+}
+
++ (NSString *) cleanURL:(NSString*)url {
+    NSString *retorno = url;
+    NSString* http = @"";
+    
+    if (url) {
+        NSRange range1 = [url rangeOfString:@"https://"];
+        NSRange range2 = [url rangeOfString:@"http://"];
+        if (range1.length > 0) {
+            http = @"https://";
+        } else if (range2.length > 0) {
+            http = @"http://";
+        }
+        
+        url = [url stringByReplacingOccurrencesOfString:http withString:@""];
+        
+        while (([url rangeOfString:@"\\"]).location != NSNotFound) {
+            url = [url stringByReplacingOccurrencesOfString:@"\\\\" withString:@"/"];
+        }
+        
+        while (([url rangeOfString:@"//"]).location != NSNotFound) {
+            url = [url stringByReplacingOccurrencesOfString:@"//" withString:@"/"];
+        }
+        
+        retorno = [NSString stringWithFormat: @"%@%@", http, url];
+    }
+
+    return retorno;
+}
+
+@end

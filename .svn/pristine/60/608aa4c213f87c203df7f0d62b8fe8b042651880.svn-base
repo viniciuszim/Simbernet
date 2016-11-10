@@ -1,0 +1,214 @@
+//
+//  LeftMenuViewController.m
+//  Simbernet
+//
+//  Created by Marcio Pinto on 02/04/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import "LeftMenuViewController.h"
+#import "SlideNavigationContorllerAnimatorFade.h"
+#import "SlideNavigationContorllerAnimatorSlide.h"
+#import "SlideNavigationContorllerAnimatorScale.h"
+#import "SlideNavigationContorllerAnimatorScaleAndFade.h"
+#import "SlideNavigationContorllerAnimatorSlideAndFade.h"
+#import "Usuario.h"
+#import "LoginViewController.h"
+#import "TwitterViewController.h"
+#import "IntranetViewController.h"
+#import "ForumViewController.h"
+#import "InstitucionalViewController.h"
+
+@interface LeftMenuViewController () {
+    CALayer *leftBorder;
+    CALayer *layerMenu;
+}
+- (Usuario *)getUsuario;
+- (void)deleteUsuario;
+@end
+
+@implementation LeftMenuViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:SlideNavigationControllerDidOpen object:nil queue:nil usingBlock:^(NSNotification *note) {
+
+        // Busca usuario logado na sessao
+        Usuario* usuario = [self getUsuario];
+        
+        [self.labelNome setText:usuario.nome];
+        
+        // Busca usuario logado na sessao
+        NSOperationQueue *queue = [NSOperationQueue new];
+        NSInvocationOperation *operation = [[NSInvocationOperation alloc]
+                                            initWithTarget:self
+                                            selector:@selector(loadUsuario:)
+                                            object:usuario];
+        [queue addOperation:operation];
+
+    }];
+    
+    self.view.backgroundColor = [UIColor colorWithPatternImage:[UIImage imageNamed:@"bg_azul"]];
+
+}
+
+//-(void)viewDidAppear:(BOOL)animated {
+//    [super viewDidAppear:animated];
+//
+//}
+//
+//-(void)viewWillDisappear:(BOOL)animated {
+//    [super viewWillDisappear:animated];
+//
+//}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (Usuario *)getUsuario
+{
+    return [Usuario getUsuario];
+}
+
+- (void)deleteUsuario {
+    [Usuario deleteUsuario];
+}
+
+#pragma mark - Async Loading
+
+- (void)loadUsuario:(Usuario *) usuario {
+
+//    NSLog(@"Usuario logado: %@", usuario);
+//    NSLog(@"Nome logado: %@", usuario.nome);
+    if (usuario != nil && usuario.nome != nil) {
+    
+        NSString *URLFoto = [NSString stringWithFormat:@"%@%@%@", HTTP_Repositorio, HTTP_PathFotosUsuarios, usuario.foto];
+    
+        NSData* imageData = [[NSData alloc] initWithContentsOfURL:[NSURL URLWithString:URLFoto]];
+        
+        UIImage* image = [[UIImage alloc] initWithData:imageData];
+        
+        [self performSelectorOnMainThread:@selector(displayImage:) withObject:image waitUntilDone:NO];
+    }
+}
+
+- (void)displayImage:(UIImage *)image {
+    [self.imageViewFoto setImage:image];
+
+    // Arredondo a imagem
+    self.imageViewFoto.layer.masksToBounds = YES;
+    self.imageViewFoto.layer.cornerRadius = self.imageViewFoto.bounds.size.width/2;
+}
+
+#pragma mark - Acoes
+
+- (IBAction)intranetAvancar:(UIButton *)sender {
+    // Redireciona para tela da Intranet
+    UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"Main" bundle: nil];
+    IntranetViewController *vc = [mainStoryboard instantiateViewControllerWithIdentifier: @"IntranetViewController"];
+    [[SlideNavigationController sharedInstance] popToRootAndSwitchToViewController:vc
+                                                             withSlideOutAnimation:self.slideOutAnimationEnabled
+                                                                     andCompletion:nil];
+    // Clean menus
+    [_viewTwitter setBackgroundColor:nil];
+    [_viewForum setBackgroundColor:nil];
+    [_viewAjuda setBackgroundColor:nil];
+    [leftBorder setBackgroundColor:nil];
+
+    // Altera cor de fundo do label no menu
+    [_viewIntranet setBackgroundColor:[UIColor colorWithRed:0.298 green:0.486 blue:0.592 alpha:1]];
+    
+    // Borda branca no canto esquerdo
+    [self leftBorderMenu:_viewIntranet];
+}
+
+- (IBAction)twitterAvancar:(UIButton *)sender {
+    // Redireciona para tela do Twitter
+    UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"Main" bundle: nil];
+    TwitterViewController *vc = [mainStoryboard instantiateViewControllerWithIdentifier: @"TwitterViewController"];
+    [[SlideNavigationController sharedInstance] popToRootAndSwitchToViewController:vc
+                                                             withSlideOutAnimation:self.slideOutAnimationEnabled
+                                                                     andCompletion:nil];
+    // Clean menus
+    [_viewIntranet setBackgroundColor:nil];
+    [_viewForum setBackgroundColor:nil];
+    [_viewAjuda setBackgroundColor:nil];
+    [leftBorder setBackgroundColor:nil];
+    
+    // Altera cor de fundo do label no menu
+    [_viewTwitter setBackgroundColor:[UIColor colorWithRed:0.298 green:0.486 blue:0.592 alpha:1]];
+
+    // Borda branca no canto esquerdo
+    [self leftBorderMenu:_viewTwitter];
+}
+
+- (IBAction)forumAvancar:(UIButton *)sender {
+    // Redireciona para tela do Forum
+    UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"Main" bundle: nil];
+    ForumViewController *vc = [mainStoryboard instantiateViewControllerWithIdentifier: @"ForumViewController"];
+    
+    [[SlideNavigationController sharedInstance] popToRootAndSwitchToViewController:vc
+                                                             withSlideOutAnimation:self.slideOutAnimationEnabled
+                                                                     andCompletion:nil];
+    // Clean menus
+    [_viewIntranet setBackgroundColor:nil];
+    [_viewTwitter setBackgroundColor:nil];
+    [_viewAjuda setBackgroundColor:nil];
+    [leftBorder setBackgroundColor:nil];
+    
+    // Altera cor de fundo do label no menu
+    [_viewForum setBackgroundColor:[UIColor colorWithRed:0.298 green:0.486 blue:0.592 alpha:1]];
+    
+    // Borda branca no canto esquerdo
+    [self leftBorderMenu:_viewForum];
+}
+
+- (IBAction)ajudaAvancar:(UIButton *)sender {
+    // Redireciona para tela de Ajuda (Institucional)
+    UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"Main" bundle: nil];
+    InstitucionalViewController *vc = [mainStoryboard instantiateViewControllerWithIdentifier: @"InstitucionalViewController"];
+    vc.chave = @"mobile-ajuda";
+    vc.titulo = @"Ajuda";
+    
+    [[SlideNavigationController sharedInstance] popToRootAndSwitchToViewController:vc
+                                                             withSlideOutAnimation:self.slideOutAnimationEnabled
+                                                                     andCompletion:nil];
+    // Clean menus
+    [_viewIntranet setBackgroundColor:nil];
+    [_viewTwitter setBackgroundColor:nil];
+    [_viewForum setBackgroundColor:nil];
+    [leftBorder setBackgroundColor:nil];
+    
+    // Altera cor de fundo do label no menu
+    [_viewAjuda setBackgroundColor:[UIColor colorWithRed:0.298 green:0.486 blue:0.592 alpha:1]];
+    
+    // Borda branca no canto esquerdo
+    [self leftBorderMenu:_viewAjuda];
+}
+
+- (IBAction)logout:(id)sender {
+
+    // Deslogar Usuario
+    [self deleteUsuario];
+    self.labelNome.text = nil;
+    self.imageViewFoto.image = nil;
+
+    // Redireciona para tela de login
+    [[SlideNavigationController sharedInstance] popToRootViewControllerAnimated:YES];
+    
+}
+
+- (void)leftBorderMenu:(UIView *) label {
+    layerMenu = [label layer];
+    
+    leftBorder = [CALayer layer];
+    leftBorder.backgroundColor = [UIColor whiteColor].CGColor;
+    leftBorder.frame = CGRectMake(0, 0, 5, layerMenu.frame.size.height);
+    [leftBorder setBorderColor:[UIColor blackColor].CGColor];
+    [layerMenu addSublayer:leftBorder];
+}
+
+@end

@@ -1,0 +1,20 @@
+//
+//  Utils.h
+//  Simbernet
+//
+//  Created by Marcio Pinto on 15/05/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import "RNActivityView.h"
+
+@interface Utils : NSObject
+
+#pragma mark Loading
+
++ (void)showViewLoading:(NSString *)label navigation:(UINavigationController*)navigationController isDone:(BOOL)done;
++ (void)showViewLoadingErro:(NSString *)label navigation:(UINavigationController*)navigationController isDone:(BOOL)done;
++ (void)hideSpinnerLoading:(UINavigationController*)navigationController;
++ (CGFloat) heightForLabel:(UILabel*)label withText:(NSString*)text;
+
+@end

@@ -1,0 +1,543 @@
+//
+//  TwitterViewController.m
+//  Simbernet
+//
+//  Created by Marcio Pinto on 15/04/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import "UIView+RNActivityView.h"
+#import "TwitterViewController.h"
+#import "TwitterInserirViewController.h"
+#import "TweetService.h"
+#import "Tweet2.h"
+#import "DateUtils.h"
+#import "SESlideTableViewCell.h"
+
+@implementation TwitterTableViewCell
+@end
+
+@interface TwitterViewController () <TweetServiceDelegate, UIAlertViewDelegate, SESlideTableViewCellDelegate> {
+    
+    UIRefreshControl* refreshControl;
+    UIActivityIndicatorView *spinnerBottom;
+    
+    TwitterInserirViewController* twitterInserirViewController;
+    
+    // Services
+    TweetService* tweetServ;
+    
+}
+
+// Outlets
+@property (strong, nonatomic) IBOutlet UITableView *tableView;
+
+// Variables
+@property (strong, nonatomic) NSMutableArray* tweetList;
+@property (nonatomic) BOOL isQuerying;
+@property (nonatomic) long queryUsingTag;
+
+@property (strong, nonatomic) NSMutableDictionary* cellArray;
+
+//@property (strong, nonatomic) UIRefreshControl* refreshControl;
+
+@end
+
+@implementation TwitterViewController
+
+//@synthesize state = _state;
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view.
+    
+    // === Setting delegates
+    
+    tweetServ = [TweetService new];
+    tweetServ.delegate = self;
+    
+    // ========================================================
+    
+    self.cellArray = [NSMutableDictionary new];
+    self.tweetList = [NSMutableArray new];
+    self.tweetList = [Tweet2 getTweets];
+    
+    if (self.tweetList.count == 0) {
+        
+        // Show loading activity
+        [self.navigationController.view showActivityViewWithLabel:@"Carregando"];
+        
+        self.isQuerying = YES;
+        [tweetServ consultarTweetsAntigos];
+    }
+    
+    // Initialize the refresh control.
+    refreshControl = [[UIRefreshControl alloc] init];
+    refreshControl.backgroundColor = [UIColor lightGrayColor];
+    refreshControl.tintColor = [UIColor whiteColor];
+    [refreshControl addTarget:self
+                            action:@selector(updateTweets)
+                  forControlEvents:UIControlEventValueChanged];
+    
+    refreshControl.attributedTitle = [Tweet2 getUltimaAtualizacao];
+    
+    [self.tableView addSubview:refreshControl];
+    
+    // Initialize the UIActivityIndicatorView.
+    spinnerBottom = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    spinnerBottom.frame = CGRectMake(0, 0, 320, 44);
+    self.tableView.tableFooterView = spinnerBottom;
+    
+    UIBarButtonItem *addButton = [[UIBarButtonItem alloc]
+                                  initWithBarButtonSystemItem:UIBarButtonSystemItemAdd
+                                  target:self
+                                  action:@selector(onAddButtonPressed:)];
+
+    self.navigationItem.rightBarButtonItem = addButton;
+}
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+#pragma mark - Class Methods
+
+- (IBAction)onFavoritarButtonPressed:(UIButton*)sender {
+    
+    if (!self.isQuerying) {
+        self.queryUsingTag = sender.tag;
+        self.isQuerying = YES;
+        
+        Tweet2* tweet = [self.tweetList objectAtIndex:sender.tag];
+        
+        [tweetServ favoritar:tweet];
+    }
+}
+
+- (IBAction)onDesfavoritarButtonPressed:(UIButton*)sender {
+    
+    if (!self.isQuerying) {
+        self.queryUsingTag = sender.tag;
+        self.isQuerying = YES;
+        
+        Tweet2* tweet = [self.tweetList objectAtIndex:sender.tag];
+        
+        [tweetServ desfavoritar:tweet];
+    }
+}
+
+- (IBAction)onDeleteButtonPressed:(UIButton*)sender {
+
+    if (!self.isQuerying) {
+        self.queryUsingTag = sender.tag;
+        self.isQuerying = YES;
+        
+        UIAlertView *alert =[[UIAlertView alloc]
+                             initWithTitle:@"Atenção"
+                             message:@"Você quer apagar permanentemente este tweet?"
+                             delegate:self
+                             cancelButtonTitle:@"Não"
+                             otherButtonTitles:@"Sim", nil];
+        [alert show];
+    }
+}
+
+- (void)onCloseButtonPressed {
+    
+    self.containerView.alpha = 1;
+    [UIView animateWithDuration:0.35 animations:^{
+        self.containerView.frame = CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, self.view.frame.size.height);
+        self.containerView.hidden = YES;
+        self.containerView.alpha = 0;
+    }];
+    
+}
+
+- (IBAction)onAddButtonPressed:(UIButton*)sender {
+    
+    self.containerView.alpha = 0;
+    self.containerView.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
+    [UIView animateWithDuration:0.35 animations:^{
+        self.containerView.hidden = NO;
+        self.containerView.alpha = 1;
+    }];
+    
+}
+
+#pragma mark - SlideNavigationController Methods
+
+- (BOOL)slideNavigationControllerShouldDisplayLeftMenu
+{
+    return YES;
+}
+
+#pragma mark - Table view data source
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    // Return the number of sections.
+    return 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    // Return the number of rows in the section.
+    return self.tweetList.count;
+}
+
+- (CGFloat) heightForLabel:(UILabel*)label withText:(NSString*)text {
+    
+//    CGRect screenSize = [[UIScreen mainScreen] bounds];
+    //    if label.frame.size.width > screenSize.width {
+    //        label.frame.size.width = screenSize.width - 70
+    //    }
+    
+    NSDictionary *defaultAttrs = @{NSFontAttributeName : label.font};
+    
+    CGSize size = [text boundingRectWithSize:CGSizeMake(label.frame.size.width, CGFLOAT_MAX) options:NSStringDrawingUsesLineFragmentOrigin attributes:defaultAttrs context:nil ].size;
+    
+    return size.height;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+
+    CGFloat sizeDefaulCell = 90;
+    CGFloat sizeDefaultLabel = 15;
+    CGFloat sizeDefaultBottomSpace = 15;
+    
+    if (self.cellArray.count > 0 && self.cellArray.count > indexPath.row) {
+        
+        TwitterTableViewCell *cell = (TwitterTableViewCell *) [self.cellArray valueForKey:[NSString stringWithFormat:@"%ld", (long)indexPath.row ]];
+        UILabel* label = cell.lblPost;
+        Tweet2* tweet = [self.tweetList objectAtIndex:indexPath.row ];
+        CGFloat height = [self heightForLabel:label withText:tweet.post];
+        
+        if (height > sizeDefaultLabel) {
+            if (((int)height % (int)sizeDefaultLabel) == 0) {
+                height = (height / sizeDefaultLabel) * sizeDefaultLabel;
+            } else {
+                height = ((height / sizeDefaultLabel) + 1) * sizeDefaultLabel;
+            }
+            
+            return label.frame.origin.y + height + sizeDefaultLabel + sizeDefaultBottomSpace;
+        } else {
+            return sizeDefaulCell;
+        }
+    } else {
+        
+        return sizeDefaulCell;
+    }
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if (IS_NOT_OS_8_OR_LATER) {
+        [tableView beginUpdates];
+    }
+    
+    TwitterTableViewCell* cell = [tableView dequeueReusableCellWithIdentifier:TwitterTableViewCellID forIndexPath:indexPath];
+     
+    // Configure the cell...
+     
+    Tweet2* tweet = [self.tweetList objectAtIndex:indexPath.row ];
+    
+    NSString *URLFoto = [NSString stringWithFormat:@"%@%@%@", HTTP_Repositorio, HTTP_PathFotosUsuarios, tweet.usuario.foto];
+    cell.profileImage.image = nil;
+    [cell.profileImage setImageURL:[NSURL URLWithString:URLFoto]];
+    // Arredondo a imagem
+    cell.profileImage.layer.masksToBounds = YES;
+    cell.profileImage.layer.cornerRadius = cell.profileImage.bounds.size.width/2;
+    
+    cell.lblProfileName.text = tweet.usuario.nome;
+    cell.lblHashTag.text = [NSString stringWithFormat:@"#%@", tweet.categoria.nome];
+    cell.lblPost.text = tweet.post;
+    cell.lblDataPost.text = [DateUtils formataObjetoDataHoraPassadas:[DateUtils convertFromStringToDate:tweet.dataPostagem withFormat:Pattern_DATE_ISO2 ]];
+    
+    cell.btnFavoritar.tag = indexPath.row;
+    [self favoritarChange:tweet.codgFavorito withCell:cell];
+    
+    [cell removeAllRightButtons];
+    if (tweet.podeExcluir) {
+        cell.delegate = self;
+        cell.tag = indexPath.row;
+        [cell addRightButtonWithText:@"Excluir" textColor:[UIColor whiteColor] backgroundColor:[UIColor colorWithRed:0.902 green:0.180 blue:0.180 alpha:1]];
+    }
+    
+    [self.cellArray setValue:cell forKey:[NSString stringWithFormat:@"%ld", (long)indexPath.row ]];
+    
+    if (IS_NOT_OS_8_OR_LATER) {
+        [tableView endUpdates];
+    }
+    
+    return cell;
+ }
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    
+    CGPoint offset = scrollView.contentOffset;
+    CGRect bounds = scrollView.bounds;
+    CGSize size = scrollView.contentSize;
+    UIEdgeInsets inset = scrollView.contentInset;
+
+    float y = offset.y + bounds.size.height - inset.bottom;
+    float h = size.height;
+    
+    float reload_distance = 0;
+    if(y > h + reload_distance) {
+        if (self.tweetList.count != 0 && !self.isQuerying) {
+            self.isQuerying = YES;
+            [tweetServ consultarTweetsAntigos];
+            
+            [spinnerBottom startAnimating];
+        }
+    }
+    
+}
+
+- (void)updateTweets
+{
+    self.isQuerying = YES;
+    [tweetServ consultarTweetsRecentes];
+    
+}
+
+- (void)favoritarChange:(long)codgFavorito withCell:(TwitterTableViewCell*) cell  {
+    if (codgFavorito > 0) {
+        [cell.favoritarImage setImage:[UIImage imageNamed:@"favorito_twitter"]];
+        [cell.btnFavoritar setTitle:@"Favorito " forState:UIControlStateNormal];
+        [cell.btnFavoritar setTintColor:[UIColor colorWithRed:0.988 green:0.569 blue:0.157 alpha:1]];
+        
+        [cell.btnFavoritar removeTarget:self action:@selector(onFavoritarButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        [cell.btnFavoritar addTarget:self action:@selector(onDesfavoritarButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+    } else {
+        [cell.favoritarImage setImage:[UIImage imageNamed:@"favoritar_twitter"]];
+        [cell.btnFavoritar setTitle:@"Favoritar" forState:UIControlStateNormal];
+        [cell.btnFavoritar setTintColor:[UIColor colorWithRed:0.000 green:0.624 blue:0.796 alpha:1]];
+        
+        [cell.btnFavoritar removeTarget:self action:@selector(onDesfavoritarButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        [cell.btnFavoritar addTarget:self action:@selector(onFavoritarButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+    }
+}
+
+/*
+ // Override to support conditional editing of the table view.
+ - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
+ // Return NO if you do not want the specified item to be editable.
+ return YES;
+ }
+ */
+
+/*
+ // Override to support editing the table view.
+ - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+ if (editingStyle == UITableViewCellEditingStyleDelete) {
+ // Delete the row from the data source
+ [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+ } else if (editingStyle == UITableViewCellEditingStyleInsert) {
+ // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
+ }
+ }
+ */
+
+/*
+ // Override to support rearranging the table view.
+ - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)fromIndexPath toIndexPath:(NSIndexPath *)toIndexPath {
+ }
+ */
+
+/*
+ // Override to support conditional rearranging of the table view.
+ - (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath {
+ // Return NO if you do not want the item to be re-orderable.
+ return YES;
+ }
+ */
+
+#pragma mark - BaseServiceDelegate
+
+- (void)error:(NSString *)error onMethod:(NSString *)method withRequest:(HttpRequest *)request {
+    NSLog(@"Service Delegate error: %@", error);
+    NSLog(@"Service Delegate method: %@", method);
+    
+    self.isQuerying = NO;
+}
+
+#pragma mark TweetServiceDelegate
+
+- (void) consultarTweetsRecentesResult:(NSArray*) tweetListResult {
+    
+    if (tweetListResult.count > 0) {
+        
+        NSMutableArray* arrayAux = [NSMutableArray new];
+        [arrayAux addObjectsFromArray:tweetListResult];
+        [arrayAux addObjectsFromArray:self.tweetList];
+        
+        self.tweetList = [NSMutableArray new];
+        self.tweetList = arrayAux;
+        
+        [self.tableView reloadData];
+        
+    }
+    
+    [self.tableView reloadData];
+    
+    self.isQuerying = NO;
+    
+    // End the refreshing
+    if (refreshControl) {
+        
+        [refreshControl endRefreshing];
+        
+        [Tweet2 setUltimaAtualizacao];
+        refreshControl.attributedTitle = [Tweet2 getUltimaAtualizacao];
+    }
+}
+
+- (void) consultarTweetsAntigosResult:(NSArray*) tweetListResult {
+    
+    if (tweetListResult.count > 0) {
+        
+        NSMutableArray* arrayAux = [NSMutableArray new];
+        [arrayAux addObjectsFromArray:self.tweetList];
+        [arrayAux addObjectsFromArray:tweetListResult];
+        
+        self.tweetList = [NSMutableArray new];
+        self.tweetList = arrayAux;
+        
+        [self.tableView reloadData];
+    }
+    
+    self.isQuerying = NO;
+    
+    // End the spinnerBottom
+    [spinnerBottom stopAnimating];
+    
+    // Hide loading activity
+    [self.navigationController.view hideActivityView];
+}
+
+- (void) favoritarResult:(Tweet2*) tweet success:(BOOL)success {
+    
+    if (success) {
+        
+        TwitterTableViewCell *cell = (TwitterTableViewCell *) [self.cellArray valueForKey:[NSString stringWithFormat:@"%ld", self.queryUsingTag]];
+        
+        [self favoritarChange:tweet.codgFavorito withCell:cell];
+    }
+    
+    self.isQuerying = NO;
+}
+
+- (void) inserirResult:(Tweet2*) tweet success:(BOOL)success {
+    
+    [self onCloseButtonPressed];
+    
+    if (success) {
+        
+        NSMutableArray* newArray = [NSMutableArray new];
+        [newArray addObject:tweet];
+        [newArray addObjectsFromArray:self.tweetList];
+        
+        self.tweetList = [NSMutableArray new];
+        self.tweetList = newArray;
+        
+        [self.tableView reloadData];
+        
+        [Tweet2 setUltimoTweet:tweet setInicio:YES];
+    }
+    
+    self.isQuerying = NO;
+}
+
+- (void) excluirResult:(BOOL)success {
+    
+    if (success) {
+        
+        
+//        @try {
+//            NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.queryUsingTag inSection:1];
+//            [self.tableView deleteRowsAtIndexPaths:[NSArray arrayWithObject:indexPath] withRowAnimation:UITableViewRowAnimationFade];
+//        }
+//        @catch (NSException *exception) {
+//            NSLog(@"%@",exception.reason);
+//        }
+        
+        
+        [self.tweetList removeObjectAtIndex:self.queryUsingTag];
+        
+        [self.tableView reloadData];
+        
+        Tweet2* tweet = [self.tweetList objectAtIndex:self.queryUsingTag ];
+        [Tweet2 removerTweet:tweet atIndex:self.queryUsingTag];
+        
+//        UIAlertView *alert =[[UIAlertView alloc]
+//                             initWithTitle:@"Sucesso"
+//                             message:@"Tweet apagado."
+//                             delegate:self
+//                             cancelButtonTitle:@"Ok"
+//                             otherButtonTitles:nil, nil];
+//        [alert show];
+        
+    } else {
+        
+        UIAlertView *alert =[[UIAlertView alloc]
+                             initWithTitle:@"Error"
+                             message:@"Ocorreu um erro ao apagar o twee."
+                             delegate:self
+                             cancelButtonTitle:@"Ok"
+                             otherButtonTitles:nil, nil];
+        [alert show];
+    }
+    
+    self.isQuerying = NO;
+}
+
+#pragma mark - UIAlertViewDelegate
+
+-(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    if (buttonIndex==1) {
+        
+        Tweet2* tweet = [self.tweetList objectAtIndex:self.queryUsingTag ];
+        
+        [tweetServ excluir:tweet];
+    } else {
+        
+        self.isQuerying = NO;
+    }
+}
+
+#pragma mark - SESlideTableViewCellDelegate
+
+- (void)slideTableViewCell:(SESlideTableViewCell*)cell didTriggerRightButton:(NSInteger)buttonIndex {
+    
+    UIButton* btnSlideTable = nil;
+    
+    switch (buttonIndex) {
+        case 0:
+            //Delete
+            
+            btnSlideTable = [UIButton new];
+            btnSlideTable.tag = cell.tag;
+            
+            [self onDeleteButtonPressed:btnSlideTable];
+            
+            break;
+        default:
+            //Cancel
+            break;
+    }
+}
+
+#pragma mark - Navigation
+
+// In a storyboard-based application, you will often want to do a little preparation before navigation
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
+    // Get the new view controller using [segue destinationViewController].
+    // Pass the selected object to the new view controller.
+    
+    if ([segue.identifier isEqualToString:@"SEGUE_TO_TWITTER_INSERIR_VIEW_CONTROLLER"]) {
+        twitterInserirViewController = segue.destinationViewController;
+        twitterInserirViewController.delegate = self;   
+    }
+}
+
+@end

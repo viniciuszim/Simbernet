@@ -1,0 +1,13 @@
+//
+//  Noticia.m
+//  Simbernet
+//
+//  Created by Marcio Pinto on 23/04/15.
+//  Copyright (c) 2015 Simber. All rights reserved.
+//
+
+#import "Noticia.h"
+
+@implementation Noticia
+
+@end

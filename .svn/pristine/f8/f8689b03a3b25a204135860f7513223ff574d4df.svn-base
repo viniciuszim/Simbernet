@@ -1,0 +1,269 @@
+//
+//  SimbernetAppDelegate.m
+//  Simbernet
+//
+//  Created by Marcio Pinto on 04/06/14.
+//  Copyright (c) 2014 Simber. All rights reserved.
+//
+
+#import "SimbernetAppDelegate.h"
+#import "CategoriaService.h"
+#import "DownloadTipoService.h"
+#import "UsuarioService.h"
+#import "Usuario.h"
+#import "Device.h"
+#import "DeviceService.h"
+
+@interface SimbernetAppDelegate () <UserServiceDelegate>
+- (void)storeUsuario:(Usuario*)usuario;
+- (Usuario *)getUsuario;
+- (void)storeDevice:(Device*)device;
+- (Device *)getDevice;
+@end
+
+@implementation SimbernetAppDelegate
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    UIStoryboard *mainStoryboard = [UIStoryboard storyboardWithName:@"Main"
+                                                             bundle: nil];
+
+    LeftMenuViewController *leftMenu = (LeftMenuViewController*)[mainStoryboard
+                                                                 instantiateViewControllerWithIdentifier: @"LeftMenuViewController"];
+    
+    RightMenuViewController *rightMenu = (RightMenuViewController*)[mainStoryboard
+                                                                    instantiateViewControllerWithIdentifier: @"RightMenuViewController"];
+    
+    [SlideNavigationController sharedInstance].rightMenu = rightMenu;
+    [SlideNavigationController sharedInstance].leftMenu = leftMenu;
+    
+    // Creating a custom bar button for right menu
+//    UIButton *button  = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 30, 30)];
+//    [button setImage:[UIImage imageNamed:@"gear"] forState:UIControlStateNormal];
+//    [button addTarget:[SlideNavigationController sharedInstance] action:@selector(toggleRightMenu) forControlEvents:UIControlEventTouchUpInside];
+//    UIBarButtonItem *rightBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:button];
+//    [SlideNavigationController sharedInstance].rightBarButtonItem = rightBarButtonItem;
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:SlideNavigationControllerDidClose object:nil queue:nil usingBlock:^(NSNotification *note) {
+        NSString *menu = note.userInfo[@"menu"];
+        [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationFade];
+        NSLog(@"Closed %@", menu);
+    }];
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:SlideNavigationControllerDidOpen object:nil queue:nil usingBlock:^(NSNotification *note) {
+        NSString *menu = note.userInfo[@"menu"];
+        [[UIApplication sharedApplication] setStatusBarHidden:YES withAnimation:UIStatusBarAnimationFade];
+        NSLog(@"Opened %@", menu);
+    }];
+    
+    [[NSNotificationCenter defaultCenter] addObserverForName:SlideNavigationControllerDidReveal object:nil queue:nil usingBlock:^(NSNotification *note) {
+        NSString *menu = note.userInfo[@"menu"];
+        NSLog(@"Revealed %@", menu);
+    }];
+    
+    // Register for push notifications
+    if ([[UIApplication sharedApplication] respondsToSelector:@selector(registerUserNotificationSettings:)]) {
+        UIUserNotificationSettings* notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil];
+        [[UIApplication sharedApplication] registerUserNotificationSettings:notificationSettings];
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+    } else {
+        [[UIApplication sharedApplication] registerForRemoteNotificationTypes: (UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeSound | UIRemoteNotificationTypeAlert)];
+    }
+
+    [self initialConfigurations];
+    
+    return YES;
+}
+
+-(void)application:(UIApplication *)application
+didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings {
+    
+    if (notificationSettings.types) {
+        NSLog(@"user allowed notifications");
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+    } else {
+        NSLog(@"user did not allow notifications");
+        UIAlertView *alert =[[UIAlertView alloc]
+                             initWithTitle:@"Please turn on Notification"
+                             message:@"Go to Settings > Notifications > App.\n Switch on Sound, Badge & Alert"
+                             delegate:self
+                             cancelButtonTitle:@"Ok"
+                             otherButtonTitles: nil];
+        [alert show];
+        // show alert here
+    }
+}
+
+- (void)application:(UIApplication *)application handleActionWithIdentifier:(NSString *)identifier forRemoteNotification:(NSDictionary *)userInfo completionHandler:(void(^)())completionHandler
+{
+    //handle the actions
+    if ([identifier isEqualToString:@"declineAction"]){
+    }
+    else if ([identifier isEqualToString:@"answerAction"]){
+    }
+}
+
+- (void)application:(UIApplication*)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken
+{
+
+    NSString* dToken = [[[[deviceToken description]
+                               stringByReplacingOccurrencesOfString: @"<" withString: @""]
+                              stringByReplacingOccurrencesOfString: @">" withString: @""]
+                             stringByReplacingOccurrencesOfString: @" " withString: @""];
+
+    // Armazena o deviceToken do usuario
+    Usuario* usuario = [self getUsuario];
+    if (usuario == nil) {
+        usuario = [Usuario new];
+    }
+    if (dToken != nil) {
+        usuario.deviceToken = dToken;
+        [self storeUsuario:usuario];
+        // Já salva o token no banco Java
+        if (usuario.nome != nil && ![@"" isEqualToString:usuario.nome]) {
+            UsuarioService* usuarioService = [UsuarioService new];
+            usuarioService.delegate = self;
+            [usuarioService atualizarDeviceToken:usuario];
+        }
+        
+        // Inseri o device no banco
+        NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+
+        Device* device = [self getDevice];
+        if (device == nil) {
+            device = [Device new];
+
+            device.token = dToken;
+            device.appID = bundleIdentifier;
+            device.appNome = defaultName;
+            device.tipo = 1;
+            device.usuario = usuario;
+            
+            [self storeDevice:device];
+
+            DeviceService* deviceService = [DeviceService new];
+            deviceService.delegate = self;
+            [deviceService inserirDeviceToken:device];
+        }
+    }
+
+    NSLog(@"Device_Token     -----> %@\n", dToken);
+}
+
+-(void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
+    NSLog(@"Error     -----> %@\n", error);
+}
+
+- (void)applicationWillResignActive:(UIApplication *)application
+{
+    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
+    // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
+}
+
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
+    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+}
+
+- (void)applicationWillEnterForeground:(UIApplication *)application
+{
+    // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
+}
+
+- (void)applicationDidBecomeActive:(UIApplication *)application
+{
+    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application
+{
+    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+}
+
+#pragma - Configurações Iniciais
+
+- (void)initialConfigurations {
+ 
+    if ([USA_MODULO_TWITTER isEqualToString:@"S"]) {
+        
+        [self getCategoriasTwitter];
+        
+        // TO TEST
+        //    NSUserDefaults* userDefaults = [NSUserDefaults standardUserDefaults];
+        //    [userDefaults removeObjectForKey:UserDefaults_ListaUltimosTweets];
+    }
+    
+    if ([USA_MODULO_DOWNLOADS isEqualToString:@"S"]) {
+        
+        [self getTiposDownloads];
+    }
+    
+}
+
+#pragma Twitter
+
+- (void)getCategoriasTwitter {
+    
+    CategoriaService* catServ = [CategoriaService new];
+    [catServ listarTodasCategorias];
+    
+}
+
+#pragma Download
+
+- (void)getTiposDownloads {
+    
+    DownloadTipoService* tipoDownServ = [DownloadTipoService new];
+    [tipoDownServ consultarTiposDownloads];
+    
+}
+
+#pragma - UsuarioServiceDelegate
+
+- (void)atualizarDeviceTokenReturn:(Usuario *)usuario success:(BOOL)success {
+    NSLog(@"success: %d", success);
+    if (success) {
+        NSLog(@"Salvou o token do device no banco do java");
+        
+    } else {
+        NSLog(@"ERRO ao tentar salvar o token do device no banco do java");
+    }
+    
+}
+
+- (void)inserirDeviceTokenReturn:(Device *)device success:(BOOL)success {
+    NSLog(@"success: %d", success);
+    if (success) {
+        NSLog(@"Salvou o device no banco do java");
+        
+    } else {
+        NSLog(@"ERRO ao tentar salvar o device no banco do java");
+    }
+}
+
+- (void)error:(NSString *)error onMethod:(NSString *)method withRequest:(HttpRequest *)request {
+    NSLog(@"Erro: %@", error);
+}
+
+- (void)storeUsuario:(Usuario*)usuario {
+    
+    [Usuario storeUsuario:usuario];
+}
+
+-(Usuario *)getUsuario
+{
+    return [Usuario getUsuario];
+}
+
+- (void)storeDevice:(Device*)device {
+    
+    [Device storeDevice:device];
+}
+
+-(Device *)getDevice
+{
+    return [Device getDevice];
+}
+
+@end
